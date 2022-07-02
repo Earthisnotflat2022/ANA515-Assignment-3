@@ -1,0 +1,98 @@
+---
+title: "ANA515-SU22 - Assignment 3"
+author: "Andrew Cutchin"
+date: "`r Sys.Date()`"
+output: 
+  word_document: default
+  html_document:
+    theme:
+      bootswatch: materia
+---
+
+```{r , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include = FALSE}
+#install.packages("tidyverse")
+#install.packages("knitr")
+#install.packages("bslib")
+```
+
+```{r , include = FALSE}
+library(tidyverse)
+library(knitr)
+library(bslib)
+library(ggplot2)
+library(stringr)
+```
+
+```{r , include = FALSE}
+#1
+stormdata_1983 <- read_csv(file = "StormEvents_details-ftp_v1.0_d1983_c20220425.csv")
+glimpse(stormdata_1983)
+```
+
+```{r , include = FALSE}
+#2
+newstormdata1_1983 <- stormdata_1983[c("BEGIN_DATE_TIME", "END_DATE_TIME", "EPISODE_ID", "EVENT_ID", "STATE", "STATE_FIPS", "CZ_NAME", "CZ_TYPE", "CZ_FIPS", "EVENT_TYPE", "SOURCE", "BEGIN_LAT", "BEGIN_LON", "END_LAT", "END_LON")]
+```
+
+```{r , include = FALSE}
+#3
+newstormdata2_1983<-arrange(newstormdata1_1983, STATE)
+```
+
+```{r , include = FALSE}
+#4
+newstormdata3_1983<-mutate(.data = newstormdata2_1983, 
+                          STATE = str_to_title(string = STATE)) 
+newstormdata4_1983<-mutate(.data = newstormdata3_1983, 
+                          CZ_NAME = str_to_title(string = CZ_NAME))
+```
+
+```{r , include = FALSE}
+#5
+newstormdata5_1983<-filter(newstormdata4_1983, CZ_TYPE=="C")
+newstormdata6_1983<-select(newstormdata5_1983, -CZ_TYPE)
+# No observations removed by this function for my birth year.  All values in CZ_TYPE were = "C". I manually checked the 8322 rows.
+```
+
+```{r , include = FALSE}
+#6
+newstormdata7_1983<-mutate(.data = newstormdata6_1983, STATE_FIPS = str_pad(STATE_FIPS, width=3, side = "left", pad = "0"))
+newstormdata8_1983<-mutate(.data = newstormdata7_1983, CZ_FIPS = str_pad(CZ_FIPS, width=3, side = "left", pad = "0"))
+newstormdata9_1983<-unite(newstormdata8_1983, "FIPS_COMBINE", c(STATE_FIPS, CZ_FIPS), sep = "", remove = TRUE)
+```
+
+```{r , include = FALSE}
+#7
+newstormdata10_1983<-rename_all(newstormdata9_1983, tolower)
+```
+
+```{r , include = FALSE}
+#8
+data("state")
+us_state_info<-data.frame(state=state.name, region=state.region, area=state.area)
+```
+
+```{r , include = FALSE}
+#9
+storm_state_freq<-data.frame(table(newstormdata10_1983$state))
+storm_state_freq_rename<-rename(storm_state_freq, c("state"="Var1"))
+storm_state_freq_upper<-mutate_all(storm_state_freq_rename, toupper)
+us_state_info_upper<-mutate_all(us_state_info, toupper)
+merged_state_info<-merge(storm_state_freq_upper, us_state_info_upper)
+```
+
+```{r , echo = FALSE} 
+#10
+merged_state_info_1<-mutate(.data = merged_state_info, area = as.numeric(area))
+merged_state_info_2<-mutate(.data = merged_state_info_1, Freq = as.numeric(Freq))
+storm_plot<-ggplot(merged_state_info_2, aes(x = area, y = Freq))+ 
+  geom_point(aes(color = region))+ 
+  labs(x = "Land area(square miles)", 
+       y = "# 0f storm events in 1983") 
+storm_plot
+```
+
